@@ -1,29 +1,35 @@
-% live detection
-%% camera
+% Wykrywanie na ¿ywo
+%% Kamera
 clc; close all; clear all;
 cam  = webcam(1)
 
-%% live
+%% Tworzenie detektorów cech charakterystycznych z modu³u vision
+% Twarz
 faceDetector = vision.CascadeObjectDetector;
+% Nos, i podanie zakresu ³¹czenia wykryæ, region zainteresowania
 nose = vision.CascadeObjectDetector('ClassificationModel','Nose', 'UseROI', true);
 nose.MergeThreshold = 50;
+% Oczy 2x i obszar ³¹czenia, region zainteresowania
 bothEyes = vision.CascadeObjectDetector('ClassificationModel','EyePairBig', 'UseROI', true);
 bothEyes.MergeThreshold = 10;
+% Oczy lewe i prawe i ³¹czenie, region zainteresowania
 lEyeCart = vision.CascadeObjectDetector('ClassificationModel','LeftEyeCART', 'UseROI', true);
 lEyeCart.MergeThreshold = 15;
 rEyeCart = vision.CascadeObjectDetector('ClassificationModel','RightEyeCART', 'UseROI', true);
 rEyeCart.MergeThreshold = 15;
+% Oczy mniejszy detektor, ³¹czenie
 lEye = vision.CascadeObjectDetector('ClassificationModel','LeftEye', 'UseROI', true);
 lEye.MergeThreshold = 10;
 rEye = vision.CascadeObjectDetector('ClassificationModel','RightEye', 'UseROI', true);
 rEye.MergeThreshold = 10;
-%%
+%% Petla programu
+% Zapis do pliku
 v = VideoWriter('test.avi');
 open(v);
 for i=1:45
-    i = snapshot(cam); i=imresize(i, [600 800]);
+    i = snapshot(cam); i=imresize(i, [600 800]);    % pobór klatki z kamery
     bbox = [];
-    bbox = faceDetector(i);
+    bbox = faceDetector(i); % wykrecie twarzy
     i_f = i;
     bothEyesbbox = [];
     nosebbox = [];
@@ -34,26 +40,7 @@ for i=1:45
         bothEyesbbox = bothEyes(i, bbox); 
         i_f = insertObjectAnnotation(i_f, 'rectangle', bothEyesbbox, 'Eyes');
     end
-    % Klasyfikacja wstêpna
-%     lEyeCartbbox = [];
-%     if ~isempty(bothEyesbbox)
-%         lEyeCartbbox = lEyeCart(i, bothEyesbbox);
-%         if ~isempty(lEyeCartbbox)
-%             lEyeCartbbox=lEyeCartbbox(1, :);
-%             i_f = insertObjectAnnotation(i_f, 'rectangle', lEyeCartbbox, 'LeftEyeCart');
-%         end
-%     end
-%     rEyeCartbbox = [];
-%     if ~isempty(bothEyesbbox)
-%         rEyeCartbbox = rEyeCart(i, bothEyesbbox);
-%         if ~isempty(rEyeCartbbox)
-%             rEyeCartbbox=rEyeCartbbox(1, :);
-%             i_f = insertObjectAnnotation(i_f, 'rectangle', rEyeCartbbox, 'RightEyeCart');
-%         end
-%     end
 
-    % klasyfikacja dokladna, mniejszy klasyfikator, dodany region of intrest i
-    % merge aby nie bylo kilka detekcj
     lEyebbox = [];
     if ~isempty(bothEyesbbox)
         lEyebbox = lEye(i, [bothEyesbbox(1)+bothEyesbbox(3)/2  bothEyesbbox(2) bothEyesbbox(3)/2 bothEyesbbox(4)]);
@@ -90,10 +77,10 @@ for i=1:45
     
     imshow(i_f); hold on;
     if ~isempty(rEyebbox) && ~isempty(lEyebbox)
-        line([xr, xl], [yr, yl], 'Color','red');
+        line([xr, xl], [yr, yl], 'Color', 'red', 'Marker', 'o');
     end
     if ~isempty(rEyebbox) && ~isempty(lEyebbox) && ~isempty(nosebbox)
-        line([xn xn], [yn ys], 'Color','red'); hold off;
+        line([xn xn], [yn ys], 'Color','orange', 'Marker', 'o'); hold off;
     end
     
     frame = getframe(gcf);
