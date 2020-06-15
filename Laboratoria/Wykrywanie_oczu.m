@@ -5,6 +5,12 @@ i = imread(zdj);
 info = imfinfo(zdj)
 figure(1);
 imagesc(i); title('Obraz orginalny');
+% Zmierzone wartoœci
+L_oczu = 62;    % [mm] odleg³oœæ Ÿrenic
+L_nosa = 44;    % [mm] œrodek oczu - œrodek chrz¹stki nosa
+L_ust = 46;     % [mm] d³ugoœæ ust bez k¹cików
+L_policzki = 130;   % [mm] odleg³oœæ policzków
+W_ust = 18;     % [mm] wysokoœæ ust
 
 % Inicjalizacja obiektu rozpoznawania twarzy
 faceDetector = vision.CascadeObjectDetector;
@@ -57,32 +63,6 @@ lEye.MergeThreshold = 10;
 rEye = vision.CascadeObjectDetector('ClassificationModel','RightEye', 'UseROI', true);
 rEye.MergeThreshold = 10;
 
-% Wykrycie ust z pomoc¹ R-G
-i_m = i(:,:,1)-i(:,:,2);
-[cn, bn] = imhist(i_m);
-[max, idx] = max(cn(2:end));
-bn(idx)
-i_m2 = imadd(i_m, -bn(idx));
-i_m2 = imadjust(i_m2);
-
-figure(4)
-subplot(121)
-imhist(i_m)
-subplot(122)
-imshow(i_m)
-
-figure(5)
-subplot(121)
-imhist(i_m2)
-subplot(122)
-imshow(i_m2)
-
-
-i_bw = imbinarize(i_m, 62/255);
-i_bw2 = imbinarize(i_m2, 244/255);
-
-figure(6)
-imshowpair(i_bw, i_bw2, 'montage')
 
 % Wykrywanie oczu w obszarach wczeœniej wyznaczonych zgrubnie
 lEyebbox = lEye(i, lEyeCartbbox);
@@ -100,13 +80,23 @@ xl = lEyebbox(1) + lEyebbox(3)/2; yl = lEyebbox(2) + lEyebbox(4)/2;
 xr = rEyebbox(1) + rEyebbox(3)/2; yr = rEyebbox(2) + rEyebbox(4)/2;
 ys = (yr+yl)/2; xs = (xr+xl)/2;
 
-% Obliczenie odleg³oœci z Pitagorasa
+% Obliczenie odleg³oœci w px. z Pitagorasa
 L = sqrt((xl-xr)^2+(yl-yr)^2);
 L2 = sqrt((xs-xn)^2+(ys-yn)^2);
+% Wynzaczenie skali na podstawie odlegoœci oczu
+skala = L_oczu / (xl-xr);
+L_nosa_skala = L2*skala;
 
-% Dodanie annostacji
-i_e2 = insertText(i_e2, [xs, ys*0.85], ['L oczu=' num2str(L)], 'AnchorPoint',"Center");
-i_e2 = insertText(i_e2, [xn*1.35, yn*0.95], ['L nosa=' num2str(L2)], 'AnchorPoint',"Center");
+
+% Dodanie adnotacji
+temp_str = "L oczu=" + num2str(L) + " px." + newline + "L rzecz=" + ...
+    num2str(L_oczu) + " mm";
+i_e2 = insertText(i_e2, [xs, ys*0.85], temp_str, 'AnchorPoint',"Center");
+
+temp_str = "L nosa=" + num2str(L2) + " px." + newline + "L=" + ...
+    num2str(L_nosa_skala) + " mm" + newline + ...
+    "L recz=" + num2str(L_nosa) + " mm";
+i_e2 = insertText(i_e2, [xn*1.35, yn*0.95], temp_str, 'AnchorPoint',"Center");
 
 % Inicjalizacja detektora ust, zwiêszkenie zakresu scalania wykryæ
 mouth = vision.CascadeObjectDetector('ClassificationModel','Mouth', 'UseROI', true);

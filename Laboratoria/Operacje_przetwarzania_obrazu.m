@@ -147,7 +147,6 @@ if save_ == 'y'
     imwrite(i_, 'FFT.bmp');
 end
 
-
 %% Filtracja obrazów
 % imfilter(obraz, maska)
 % Dolnoprzepustowy
@@ -391,7 +390,6 @@ end
 %% Centroidy
 % Binaryzacja
 i_bw = im2bw(i_gray, [110/255]);
-
 
 i_1 = bwmorph(i_bw, 'shrink', inf);
 i_2 = bwmorph(i_bw, 'remove');
